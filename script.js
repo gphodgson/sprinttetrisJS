@@ -3,9 +3,13 @@ var drop_speed = 10;
 var HMR = 5;
 var drop_timer = 0;
 var horizontal_timer = 0
+var last_milli_sincemove = 0
+var last_milli_sincedrop = 0
 
 var score = 0;
 var lines = 0;
+var level = 1;
+var lines_req = 10;
 
 
 
@@ -13,7 +17,7 @@ var lines = 0;
 function create_ghost_tet(tet) {
 	ghost_tet = new Tetromino(tet.tetromino, "", placed_blocks, true, ghost_img)
 	ghost_tet.blocks.splice(0,4)
-	ghost_tet.setposX(tet.pos.x)
+	ghost_tet.setPos(tet.pos.x, tet.pos.y)
 	ghost_tet.hard_drop();
 	
 
@@ -90,21 +94,19 @@ function draw_borders() {
 }
 
 function preload() {
-	try{
-		block_img = loadImage('assets/block_img.png')
-		Iblock_img = loadImage('assets/Iblock_img.png')
-		Tblock_img = loadImage('assets/Tblock_img.png')
-		Oblock_img = loadImage('assets/Oblock_img.png')
-		Lblock_img = loadImage('assets/Lblock_img.png')
-		Jblock_img = loadImage('assets/Jblock_img.png')
-		Sblock_img = loadImage('assets/Sblock_img.png')
-		Zblock_img = loadImage('assets/Zblock_img.png')
-		ghost_img = loadImage('assets/ghost_img.png')
 
-		border_img = loadImage('assets/border.png')
-	}catch(err){
-		console.log(err)
-	}
+	block_img = loadImage('assets/block_img.png')
+	Iblock_img = loadImage('assets/Iblock_img.png')
+	Tblock_img = loadImage('assets/Tblock_img.png')
+	Oblock_img = loadImage('assets/Oblock_img.png')
+	Lblock_img = loadImage('assets/Lblock_img.png')
+	Jblock_img = loadImage('assets/Jblock_img.png')
+	Sblock_img = loadImage('assets/Sblock_img.png')
+	Zblock_img = loadImage('assets/Zblock_img.png')
+	ghost_img = loadImage('assets/ghost_img.png')
+
+	border_img = loadImage('assets/border.png')
+
 }
 
 
@@ -136,18 +138,20 @@ function draw() {
 	if (keyIsDown(DOWN_ARROW)){
 		drop_speed = 2;
 	}else{
-		drop_speed = 30;
+		drop_speed = 1000 * (1/pow(level,level/6)) 
 	}
 
 
-	if (frameCount % drop_speed == 0 && !tet.isPlaced){
+	if (millis()-last_milli_sincedrop >= drop_speed && !tet.isPlaced){
 		tet.update();
 
 		ghost_tet = create_ghost_tet(tet)
 
+		last_milli_sincedrop= millis();
+
 	}
 
-	if (horizontal_timer > 2){
+	if (millis()-last_milli_sincemove >= 75){
 		if (keyIsDown(LEFT_ARROW)){
 
 			tet.shift('left');
@@ -157,6 +161,7 @@ function draw() {
 			}
 
 			ghost_tet = create_ghost_tet(tet)
+			last_milli_sincemove = millis()
 
 		}else if (keyIsDown(RIGHT_ARROW)){
 
@@ -168,8 +173,9 @@ function draw() {
 			}
 
 			ghost_tet = create_ghost_tet(tet)
+			last_milli_sincemove = millis()
 		}
-		horizontal_timer = 0;
+		
 	}else{
 		horizontal_timer++
 	}
@@ -202,11 +208,15 @@ function draw() {
 	
 	textSize(20)
 
-	text("Version: 0.4 Alpha",0,20)
+	text("Version: 0.5 Alpha",0,20)
 	text("fps: "+ round(frameRate()),0,40)
+	text("mili: "+ round(millis()),0,60)
+	text("drop_speed: "+ drop_speed,0,80)
 
 	text("Score: " + score, 480, 250)
-	text("Lines: " + lines, 480, 270)
+	text("Lines: " + lines, 480, 275)
+	text("Level: " + level, 480, 300)
+	text("Next Level in: " + (lines_req-lines) + " lines", 480, 325)
 
 	for (i = 0; i < placed_blocks.length; i++){
 		placed_blocks[i].draw();
@@ -253,6 +263,11 @@ function draw() {
 		score += 800
 	}
 
+	if (lines >= lines_req){
+		level += 1;
+		lines_req += lines_req + level*2
+	}
+
 	
 
 }
@@ -260,6 +275,12 @@ function keyPressed() {
 	if (keyCode == UP_ARROW){
 		tet.rotate('cw');
 		ghost_tet = create_ghost_tet(tet);
+	}
+
+	if (keyCode == 81){
+		level-=1
+	}else if (keyCode == 87){
+		level+=1
 	}
 
 	if (keyCode == 88){
