@@ -33,15 +33,15 @@ function Tetromino(tetromino, tetromino_string, placed_blocks, isGhost, img) {
 	this.reset = function() {
 		for(y=0; y<4; y++){
 
-		for(x=0; x<this.tetromino[y].length; x++){
+			for(x=0; x<this.tetromino[y].length; x++){
 
-			if (this.tetromino[y].charAt(x) == "O"){
+				if (this.tetromino[y].charAt(x) == "O"){
 
-				this.blocks.push(new Block(this.pos.x + ((x+1)*20), this.pos.y + ((y+1)*20),  this.color, placed_blocks, false, this.img));
+					this.blocks.push(new Block(this.pos.x + ((x+1)*20), this.pos.y + ((y+1)*20),  this.color, placed_blocks, false, this.img));
 
+				}
 			}
 		}
-	}
 
 	}
 
@@ -86,11 +86,72 @@ function Tetromino(tetromino, tetromino_string, placed_blocks, isGhost, img) {
 		return false;
 	}
 
+	this.attempt_rotate = function(dir) {
+		this.rotate(dir)
+
+		inGoodPlace = false
+		cantRotate = false
+
+		while(!inGoodPlace){
+			inGoodPlace = true
+
+			for (var y = this.placed_blocks.length - 1; y >= 0; y--) {
+				for (var x = this.blocks.length - 1; x >= 0; x--) {
+					if (this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x && this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x){
+						this.force_shift('right')
+						if (this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x && this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x){
+							this.force_shift('left')
+							this.force_shift('left')
+							if (this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x && this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x){
+								cantRotate = true
+							}
+						}
+						
+					}
+					if (this.blocks[y].x <= 200){
+						this.force_shift('right')
+						inGoodPlace = false
+					}
+					if (this.blocks[y].x <= 420){
+						this.force_shift('left')
+						inGoodPlace = false
+					}
+
+					if(cantRotate){
+						if (dir == 'cw'){
+							this.rotate('ccw')
+						}else{
+							this.rotate('cw')
+						}
+						inGoodPlace=true
+					}
+				}
+
+			}
+		}
+
+	}
+
+	this.force_shift = function(dir) {
+		if (dir == 'left'){
+			for (i=0; i<this.blocks.length; i++){
+				this.blocks[i].shift('left');
+			}
+			this.pos.x -= 20;
+
+		}else if (dir == 'right'){
+			for (i=0; i<this.blocks.length; i++){
+				this.blocks[i].shift('right');
+			}
+			this.pos.x += 20;
+		}
+	}
+
 	this.shift = function(dir) {
 		blocked_left = false
 		blocked_right = false
 
-		this.blocks[0].left_blocked
+		// this.blocks[0].left_blocked
 
 		for (i=0; i<this.blocks.length; i++){
 			if(this.blocks[i].blocked_left){
@@ -152,6 +213,21 @@ function Tetromino(tetromino, tetromino_string, placed_blocks, isGhost, img) {
 		}
 
 		this.reset()
+
+		for (var i = this.blocks.length - 1; i >= 0; i--) {
+			if (this.blocks[i].true_pos.x <= 200 || this.blocks[i].true_pos.x >= 420){
+				if(this.blocks[i].true_pos.x <= 200){
+					this.blocked_left = true
+				}else if(this.blocks[i].true_pos.x >= 420){
+					this.blocked_right
+				}
+				if(dir == 'cw'){
+					this.rotate('ccw')
+				}else{
+					this.rotate('cw')
+				}
+			}
+		}
 	}
 
 

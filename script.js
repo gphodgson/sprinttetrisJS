@@ -11,7 +11,8 @@ var lines = 0;
 var level = 1;
 var lines_req = 10;
 
-
+var inGame = false;
+var mainMenu = true;
 
 
 function create_ghost_tet(tet) {
@@ -87,6 +88,8 @@ function draw_borders() {
 	image(border_img,200,0)
 	image(border_img,420,0)
 
+	image(death_bar_img,220,165)
+
 	rect(480,100,120,3)
 	rect(480,100,3,100)
 	rect(480,200,120,3)
@@ -106,9 +109,20 @@ function preload() {
 	ghost_img = loadImage('assets/ghost_img.png')
 
 	border_img = loadImage('assets/border.png')
+	death_bar_img = loadImage('assets/death_bar.png')
 
 }
 
+function getTimeString(milli) {
+	total_seconds = milli / 1000
+
+	minutes = Math.floor(total_seconds/60)
+
+	seconds = Math.floor(((total_seconds/60) - minutes) * 60)
+
+
+	return minutes + ":" + seconds +":00"
+}
 
 function setup() {
 
@@ -129,143 +143,173 @@ function setup() {
 	ghost_tet = create_ghost_tet(tet);
 }
 
+
+
 function draw() {
 	//DRAW FUNCTION REPEATS EVREY FRAME!!
 	//Resets frame
 	background(51);
 	// draw_grid();
 
-	if (keyIsDown(DOWN_ARROW)){
-		drop_speed = 2;
-	}else{
-		drop_speed = 1000 * (1/pow(level,level/6)) 
-	}
-
-
-	if (millis()-last_milli_sincedrop >= drop_speed && !tet.isPlaced){
-		tet.update();
-
-		ghost_tet = create_ghost_tet(tet)
-
-		last_milli_sincedrop= millis();
-
-	}
-
-	if (millis()-last_milli_sincemove >= 75){
-		if (keyIsDown(LEFT_ARROW)){
-
-			tet.shift('left');
-			drop_timer = 0;
-			if (!tet.check_blocked()){
-				tet.setPlaced(false);
-			}
-
-			ghost_tet = create_ghost_tet(tet)
-			last_milli_sincemove = millis()
-
-		}else if (keyIsDown(RIGHT_ARROW)){
-
-			tet.shift('right');
-			drop_timer = 0;
-
-			if (!tet.check_blocked()){
-				tet.setPlaced(false);
-			}
-
-			ghost_tet = create_ghost_tet(tet)
-			last_milli_sincemove = millis()
+	if (mainMenu){
+		if(keyIsDown(RETURN)){
+			mainMenu = false
+			inGame = true
 		}
+
+		text("Version: 0.6 Alpha",0,20)
+		// stroke(0)
+		// strokeWeight(6)
+		textSize(76)
+		fill(0,150,0)
+		text("GeoFFris",152,height/2+2)
+		fill(0,255,0)
+		text("GeoFFris",150,height/2)
+
+		textSize(20)
+		fill(75,0,0)
+		text("Press Enter to Start",221,height/2+51)
+		fill(255,0,0)
+		text("Press Enter to Start",220,height/2+50)
 		
-	}else{
-		horizontal_timer++
 	}
 
-	if (tet.isPlaced){
+	if (inGame){
 
-		if (drop_timer >= 15){
-
-			for(i=0; i < tet.blocks.length; i++){
-				tet.blocks[i].setPlaced(true);
-
-				placed_blocks.push(tet.blocks[i]);
-			}
-
-			tet = new Tetromino(next_tet.tetromino, "", placed_blocks, false, next_tet.img)
-
-			next_tet = create_next_tetromino();
-
-			drop_timer = 0;
+		if (keyIsDown(DOWN_ARROW)){
+			drop_speed = 2;
 		}else{
-			drop_timer++;
+			round(drop_speed = 1000 * (1/pow(level,level/6))) 
 		}
-	}
 
-	ghost_tet.draw();
 
-	next_tet.draw();
-	tet.draw()
-	draw_borders();
-	
-	textSize(20)
+		if (millis()-last_milli_sincedrop >= drop_speed && !tet.isPlaced){
+			tet.update();
 
-	text("Version: 0.5 Alpha",0,20)
-	text("fps: "+ round(frameRate()),0,40)
-	text("mili: "+ round(millis()),0,60)
-	text("drop_speed: "+ drop_speed,0,80)
+			ghost_tet = create_ghost_tet(tet)
 
-	text("Score: " + score, 480, 250)
-	text("Lines: " + lines, 480, 275)
-	text("Level: " + level, 480, 300)
-	text("Next Level in: " + (lines_req-lines) + " lines", 480, 325)
+			last_milli_sincedrop= millis();
 
-	for (i = 0; i < placed_blocks.length; i++){
-		placed_blocks[i].draw();
-	}
+		}
 
-	combo = 0
-	for (x = 1; x <= 16; x++){
-		row = x*20;
-		count = 0;
+		if (millis()-last_milli_sincemove >= 75){
+			if (keyIsDown(LEFT_ARROW)){
 
-		// console.log(row)
+				tet.shift('left');
+				drop_timer = 0;
+				if (!tet.check_blocked()){
+					tet.setPlaced(false);
+				}
 
-		for (i = 0; i < placed_blocks.length; i++) {
-			if (500 - placed_blocks[i].true_pos.y == row){
-				count++
-				
+				ghost_tet = create_ghost_tet(tet)
+				last_milli_sincemove = millis()
+
+			}else if (keyIsDown(RIGHT_ARROW)){
+
+				tet.shift('right');
+				drop_timer = 0;
+
+				if (!tet.check_blocked()){
+					tet.setPlaced(false);
+				}
+
+				ghost_tet = create_ghost_tet(tet)
+				last_milli_sincemove = millis()
+			}
+			
+		}else{
+			horizontal_timer++
+		}
+
+		if (tet.isPlaced){
+
+			if (drop_timer >= 15){
+
+				for(i=0; i < tet.blocks.length; i++){
+					tet.blocks[i].setPlaced(true);
+
+					placed_blocks.push(tet.blocks[i]);
+				}
+
+				tet = new Tetromino(next_tet.tetromino, "", placed_blocks, false, next_tet.img)
+
+				next_tet = create_next_tetromino();
+
+				drop_timer = 0;
+			}else{
+				drop_timer++;
 			}
 		}
-		if (count >= 10){
-			lines++
-			combo++
-			for (var i = placed_blocks.length - 1; i >= 0; i--) {
-				if ( 500 - placed_blocks[i].true_pos.y == row){
-					placed_blocks.splice(i, 1);
+
+		ghost_tet.draw();
+
+		next_tet.draw();
+		tet.draw()
+		draw_borders();
+		
+		textSize(20)
+
+		text("Version: 0.6 Alpha",0,20)
+		text("fps: "+ round(frameRate()),0,40)
+		text("mili: "+ round(millis()),0,60)
+		text("drop_speed: "+ drop_speed,0,80)
+
+
+		text("Score: " + score, 480, 250)
+		text("Lines: " + lines, 480, 275)
+		text("Level: " + level, 480, 300)
+		text("Next Level in: " + (lines_req-lines) + " lines", 480, 325)
+		text("Time: " + getTimeString(millis()) , 480, 350)
+
+		for (i = 0; i < placed_blocks.length; i++){
+			placed_blocks[i].draw();
+		}
+
+		combo = 0
+		for (x = 1; x <= 16; x++){
+			row = x*20;
+			count = 0;
+
+			// console.log(row)
+
+			for (i = 0; i < placed_blocks.length; i++) {
+				if (500 - placed_blocks[i].true_pos.y == row){
+					count++
+					
 				}
 			}
-
-			for (var i = placed_blocks.length - 1; i >= 0; i--) {
-				if (500-placed_blocks[i].true_pos.y > row){
-					placed_blocks[i].force_update()
+			if (count >= 10){
+				lines++
+				combo++
+				for (var i = placed_blocks.length - 1; i >= 0; i--) {
+					if ( 500 - placed_blocks[i].true_pos.y == row){
+						placed_blocks.splice(i, 1);
+					}
 				}
-				
+
+				for (var i = placed_blocks.length - 1; i >= 0; i--) {
+					if (500-placed_blocks[i].true_pos.y > row){
+						placed_blocks[i].force_update()
+					}
+					
+				}
 			}
 		}
-	}
 
-	if (combo == 1){
-		score += 200;
-	}else if (combo == 2){
-		score += 300
-	}else if (combo == 3){
-		score += 500
-	}else if (combo == 4){
-		score += 800
-	}
+		if (combo == 1){
+			score += 200;
+		}else if (combo == 2){
+			score += 300
+		}else if (combo == 3){
+			score += 500
+		}else if (combo == 4){
+			score += 800
+		}
 
-	if (lines >= lines_req){
-		level += 1;
-		lines_req += lines_req + level*2
+		if (lines >= lines_req){
+			level += 1;
+			lines_req += lines_req + level*2
+		}
 	}
 
 	
@@ -273,7 +317,7 @@ function draw() {
 }
 function keyPressed() {
 	if (keyCode == UP_ARROW){
-		tet.rotate('cw');
+		tet.rotate('cw')
 		ghost_tet = create_ghost_tet(tet);
 	}
 
