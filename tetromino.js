@@ -1,202 +1,66 @@
-function Tetromino(tetromino, tetromino_string, placed_blocks, isGhost, img) {
-	this.blocks = [];
+//represents a collection of Blocks, that make up a tetromino
 
-	this.pos = createVector(width/2, -60);
+//param x: the starting X position of the tetromino
+//param y: the starting Y position of the tetromino
+//param tetromino: the meta data of the tetromino, aquiried from the Pieces class.
 
-	this.isPlaced = false;
+function Tetromino(x, y, tetromino, ghostImg, globalPlacedBlocks) {
+    this.x = x;
+    this.y = y;
 
-	this.rotation = 0;
+    this.tetromino = tetromino;
 
-	this.placed_blocks = placed_blocks;
+    this.ghostImg = ghostImg
 
-	this.img = img;
+    this.globalPlacedBlocks = globalPlacedBlocks;
 
-	this.tetromino = tetromino;
-	if (!isGhost){
-		this.color = tetromino[4];
-	}else{
-		this.color = [150,150,150]
-	}
+    this.rotation = 0;
 
-	for(y=0; y<4; y++){
+    this.generateBlocks = function() {
+        var blocks = [];
+        for(y=0; y<4; y++){
+    		for(x=0; x<this.tetromino[y].length; x++){
+    			if (this.tetromino[y].charAt(x) == "O"){
+    				blocks.push(new Block(this.x + ((x+1)*40), this.y + ((y+1)*40), this.tetromino[4], this.ghostImg, this.globalPlacedBlocks));
+    			}
+    		}
+    	}
 
-		for(x=0; x<tetromino[y].length; x++){
-
-			if (tetromino[y].charAt(x) == "O"){
-
-				this.blocks.push(new Block(this.pos.x + ((x+1)*20), this.pos.y + ((y+1)*20),  this.color, placed_blocks, false, this.img));
-
-			}
-		}
-	}
-
-	this.reset = function() {
-		for(y=0; y<4; y++){
-
-			for(x=0; x<this.tetromino[y].length; x++){
-
-				if (this.tetromino[y].charAt(x) == "O"){
-
-					this.blocks.push(new Block(this.pos.x + ((x+1)*20), this.pos.y + ((y+1)*20),  this.color, placed_blocks, false, this.img));
-
-				}
-			}
-		}
-
-	}
-
-	this.hard_drop = function() {
-		var stop = false
-
-		while(!stop){
-
-			// console.log("debug")
-
-			this.update();
-
-			for(i=0; i<this.blocks.length; i++){
-				for(x=0; x<this.placed_blocks.length; x++){
-					if (this.blocks[i].true_pos.y+20 == this.placed_blocks[x].true_pos.y  && this.blocks[i].true_pos.x == this.placed_blocks[x].true_pos.x){
-						stop = true
-					}
-				}
-
-				if (this.blocks[i].true_pos.y + 20 >= height){
-						stop = true
-				}
-				
-			}
-		}
-	}
-
-	this.check_blocked = function() {
-		for(i=0; i<this.blocks.length; i++){
-			for(x=0; x<this.placed_blocks.length; x++){
-				if (this.blocks[i].true_pos.y+20 == this.placed_blocks[x].true_pos.y  && this.blocks[i].true_pos.x == this.placed_blocks[x].true_pos.x){
-					return true;
-				}
-			}
-
-			if (this.blocks[i].true_pos.y + 20 >= height){
-					return true;
-			}
-			
-		}
-
-		return false;
-	}
-
-	this.attempt_rotate = function(dir) {
-		this.rotate(dir)
-
-		inGoodPlace = false
-		cantRotate = false
-
-		while(!inGoodPlace){
-			inGoodPlace = true
-
-			for (var y = this.placed_blocks.length - 1; y >= 0; y--) {
-				for (var x = this.blocks.length - 1; x >= 0; x--) {
-					if (this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x && this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x){
-						this.force_shift('right')
-						if (this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x && this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x){
-							this.force_shift('left')
-							this.force_shift('left')
-							if (this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x && this.blocks[x].true_pos.x == this.placed_blocks[y].true_pos.x){
-								cantRotate = true
-							}
-						}
-						
-					}
-					if (this.blocks[y].x <= 200){
-						this.force_shift('right')
-						inGoodPlace = false
-					}
-					if (this.blocks[y].x <= 420){
-						this.force_shift('left')
-						inGoodPlace = false
-					}
-
-					if(cantRotate){
-						if (dir == 'cw'){
-							this.rotate('ccw')
-						}else{
-							this.rotate('cw')
-						}
-						inGoodPlace=true
-					}
-				}
-
-			}
-		}
-
-	}
-
-	this.force_shift = function(dir) {
-		if (dir == 'left'){
-			for (i=0; i<this.blocks.length; i++){
-				this.blocks[i].shift('left');
-			}
-			this.pos.x -= 20;
-
-		}else if (dir == 'right'){
-			for (i=0; i<this.blocks.length; i++){
-				this.blocks[i].shift('right');
-			}
-			this.pos.x += 20;
-		}
-	}
-
-	this.shift = function(dir) {
-		blocked_left = false
-		blocked_right = false
-
-		// this.blocks[0].left_blocked
-
-		for (i=0; i<this.blocks.length; i++){
-			if(this.blocks[i].blocked_left){
-				blocked_left = true;
-			}
-			if (this.blocks[i].blocked_right){
-				blocked_right = true;
-			}
-		}
-
-		if (!blocked_left && dir == 'left'){
-			for (i=0; i<this.blocks.length; i++){
-				this.blocks[i].shift('left');
-			}
-			this.pos.x -= 20;
-
-		}else if (!blocked_right && dir == 'right'){
-			for (i=0; i<this.blocks.length; i++){
-				this.blocks[i].shift('right');
-			}
-			this.pos.x += 20;
-		}
-
-	}
+        return blocks;
+    }
 
 
-	this.rotate = function(dir) {
-		if (dir == 'cw'){
-			this.rotation++;
-		}else if (dir == 'ccw'){
-			this.rotation--;
-		}
+    this.blocks = this.generateBlocks();
 
-		if (this.rotation > 3){
-			this.rotation = 0;
-		}else if (this.rotation < 0){
-			this.rotation = 3;
-		}
-
-		for (var i = this.blocks.length - 1; i >= 0; i--) {
-			this.blocks.pop(i);
-		}
+    this.update = function (dir) {
+        if(dir == 'down'){
+            this.y += 40;
+        }else if(dir == 'right'){
+            this.x += 40;
+        }else if(dir == 'left'){
+            this.x -= 40;
+        }
+    }
 
 
-		if (this.tetromino[5] == 7){
+
+    this.rotate = function(dir) {
+
+        if(dir == 'cw'){
+            this.rotation++;
+
+            if(this.rotation > 3){
+                this.rotation = 0;
+            }
+        }else if(dir == 'ccw'){
+            this.rotation--;
+
+            if(this.rotation < 0){
+                this.rotation = 3;
+            }
+        }
+
+        if (this.tetromino[5] == 7){
 			this.tetromino = Pieces.Iblock(this.rotation)
 		}else if (this.tetromino[5] == 6){
 			this.tetromino = Pieces.Oblock(this.rotation)
@@ -212,76 +76,46 @@ function Tetromino(tetromino, tetromino_string, placed_blocks, isGhost, img) {
 			this.tetromino = Pieces.Zblock(this.rotation)
 		}
 
-		this.reset()
+        this.blocks = this.generateBlocks();
+    }
 
-		for (var i = this.blocks.length - 1; i >= 0; i--) {
-			if (this.blocks[i].true_pos.x <= 200 || this.blocks[i].true_pos.x >= 420){
-				if(this.blocks[i].true_pos.x <= 200){
-					this.blocked_left = true
-				}else if(this.blocks[i].true_pos.x >= 420){
-					this.blocked_right
-				}
-				if(dir == 'cw'){
-					this.rotate('ccw')
-				}else{
-					this.rotate('cw')
-				}
-			}
-		}
-	}
+    this.isBlockedRotateCW = function() {
+        var blocked = false;
+        this.rotate('cw')
 
+        for (var i = 0; i < this.blocks.length; i++) {
+            for (var x = 0; x < this.globalPlacedBlocks.length; x++) {
+                if(this.globalPlacedBlocks[x].x == this.blocks[i].x && this.globalPlacedBlocks[x].y == this.blocks[i].y){
+                    blocked = true;
+                }
+            }
 
+            if(this.blocks[i].x > 800 || this.blocks[i].x < 440){
+                blocked = true;
+            }
+        }
 
+        this.rotate('ccw')
+        return blocked;
+    }
 
+    this.isBlockedRotateCW = function() {
+        var blocked = false;
+        this.rotate('ccw')
 
+        for (var i = 0; i < this.blocks.length; i++) {
+            for (var x = 0; x < this.globalPlacedBlocks.length; x++) {
+                if(this.globalPlacedBlocks[x].x == this.blocks[i].x && this.globalPlacedBlocks[x].y == this.blocks[i].y){
+                    blocked = true;
+                }
+            }
 
+            if(this.blocks[i].x > 800 || this.blocks[i].x < 440){
+                blocked = true;
+            }
+        }
 
-
-	this.draw = function() {
-		for (i=0; i<this.blocks.length; i++){
-			this.blocks[i].draw();
-		}
-	}
-
-	this.update = function(){
-
-		for (i=0; i<this.blocks.length; i++){
-			this.blocks[i].update();
-		}
-		this.pos.y += 20
-
-		for (i=0; i<this.blocks.length; i++){
-			if(this.blocks[i].placed){
-				this.isPlaced = true;
-			}
-		}
-	}
-
-	this.setPlaced = function(x) {
-		this.isPlaced = x;
-
-		for (i=0; i<this.blocks.length; i++){
-			this.blocks[i].setPlaced(x);
-
-		}
-	}
-
-	this.setposX = function(x) {
-		this.pos.x = x
-
-		this.reset();
-	}
-
-	this.setposY = function(x) {
-		this.pos.y = x
-
-		this.reset();
-	}
-
-	this.setPos = function(x,y) {
-		this.pos.x = x;
-		this.pos.y = y;
-
-		this.reset()
-	}
+        this.rotate('cw')
+        return blocked;
+    }
 }

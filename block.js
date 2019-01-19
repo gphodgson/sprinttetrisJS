@@ -1,85 +1,112 @@
-function Block(true_x, true_y, color, placed_blocks, isPlaced, img) {
-	this.true_pos = createVector(true_x,true_y);
-	this.img = img
 
-	this.dimensions = 20;
+//Block: Represents a single block on a tetromino
+//Param x: the starting X position of the block
+//Param y: the starting Y position of the block
+//Param img: the image that will reprsent the block
 
-	this.color = color;
+function Block(x, y, img, ghostImg, globalPlacedBlocks) {
+    this.x = x;
+    this.y = y;
 
-	if (isPlaced){
-		this.placed = true;
-	}else{
-		this.placed = false;
-	}
+    this.width = 40;
+    this.height = 40;
 
-	this.placed_blocks = placed_blocks;
+    this.img = img;
+
+    this.globalPlacedBlocks = globalPlacedBlocks;
+
+    // this.ghostX = 0;
+    // this.ghostY = 0;
+    // this.ghostImg = ghostImg;
+    // this.placed = false;
+
+    this.isBlockedDownward = function() {
+        var blocked = false;
+
+        if ((this.y + 80) > height){
+            blocked = true;
+        }
+
+        for (var i = 0; i < this.globalPlacedBlocks.length; i++) {
+            if (this.y + 40 == this.globalPlacedBlocks[i].y && this.x == this.globalPlacedBlocks[i].x){
+                blocked = true;
+            }
+        }
+
+        return blocked;
+    }
+
+    this.ghostIsBlockedDownward = function() {
+        var blocked = false;
+
+        if ((this.ghostY + 41) > height){
+            blocked = true;
+        }
+
+        for (var i = 0; i < this.globalPlacedBlocks.length; i++) {
+            if (this.ghostY + 40 == this.globalPlacedBlocks[i].y && this.ghostX == this.globalPlacedBlocks[i].x){
+                blocked = true;
+            }
+        }
+
+        return blocked;
+    }
+
+    this.isBlockedLeft = function(){
+        var blocked = false;
+
+        if ((this.x - 40) < 440){
+            blocked = true;
+        }
+
+        for (var i = 0; i < this.globalPlacedBlocks.length; i++) {
+            if (this.x - 40 == this.globalPlacedBlocks[i].x && this.y == this.globalPlacedBlocks[i].y){
+                blocked = true;
+            }
+        }
+
+        return blocked;
+    }
+
+    this.isBlockedRight = function(){
+        var blocked = false;
+
+        if ((this.x + 40) > 800){
+            blocked = true;
+        }
+
+        for (var i = 0; i < this.globalPlacedBlocks.length; i++) {
+            if (this.x + 40 == this.globalPlacedBlocks[i].x && this.y == this.globalPlacedBlocks[i].y){
+                blocked = true;
+            }
+        }
+
+        return blocked;
+    }
 
 
+    this.shift = function(dir) {
+        if (!this.isBlockedLeft() && dir == 'left'){
+            this.x -= 40;
+        }
 
-	this.update = function() {
-		if (!this.placed){
-			this.true_pos.y += 20;
-		}
+        if (!this.isBlockedRight() && dir == 'right'){
+            this.x += 40;
+        }
+    }
 
-		if (this.true_pos.y + 20 >= height){
-			this.placed = true;
-		}
-
-
-		for(x=0; x<this.placed_blocks.length;x++){
-			if(this.true_pos.y+20 == this.placed_blocks[x].true_pos.y && this.true_pos.x == this.placed_blocks[x].true_pos.x){
-				this.placed = true;
-			}
-		}
-
-	}
-
-	this.force_update = function() {
-		this.true_pos.y += 20;
-	}
-
-	this.draw = function() {
-		// strokeWeight(2);
-		// stroke(0);
-		// fill(this.color[0], this.color[1], this.color[2]);
-		// rect(this.true_pos.x, this.true_pos.y, this.dimensions, this.dimensions);
-
-		image(this.img, this.true_pos.x, this.true_pos.y)
-	}
+    this.update = function() {
+        if (!this.isBlockedDownward()){
+            this.y += 40
+        }
+    }
+    this.forceUpdate = function() {
+        this.y += 40;
+    }
 
 
+    this.draw = function(img) {
+        image(img, this.x, this.y);
 
-	this.shift = function(dir) {
-
-		this.blocked_right = false;
-		this.blocked_left = false;
-
-		if (dir == 'left' && this.true_pos.x+20 <= width && !this.blocked_left){
-			this.true_pos.x -= 20;
-		}else if (dir == 'right' && this.true_pos.x-20 >= 0 && !this.blocked_right){
-			this.true_pos.x += 20;
-		}
-
-
-		for (x=0; x<this.placed_blocks.length; x++){
-			if (this.true_pos.x+20 == this.placed_blocks[x].true_pos.x && this.true_pos.y == this.placed_blocks[x].true_pos.y){
-				this.blocked_right = true;
-			}
-			if (this.true_pos.x-20 == this.placed_blocks[x].true_pos.x && this.true_pos.y == this.placed_blocks[x].true_pos.y){
-				this.blocked_left = true;
-			}
-
-			if (this.true_pos.x+20 == 420){
-				this.blocked_right = true
-			}
-			if (this.true_pos.x-20 == 200){
-				this.blocked_left = true
-			}
-
-		}
-	}
-
-	this.setPlaced = function(x) {
-		this.placed = x;
-	}
+    }
 }

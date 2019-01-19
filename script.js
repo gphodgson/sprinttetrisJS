@@ -1,103 +1,13 @@
-var placed_blocks = [];
-var drop_speed = 10;
-var HMR = 5;
-var drop_timer = 0;
-var horizontal_timer = 0
-var last_milli_sincemove = 0
-var last_milli_sincedrop = 0
 
-var score = 0;
-var lines = 0;
-var level = 1;
-var lines_req = 10;
-
-var inGame = false;
-var mainMenu = true;
-
-
-function create_ghost_tet(tet) {
-	ghost_tet = new Tetromino(tet.tetromino, "", placed_blocks, true, ghost_img)
-	ghost_tet.blocks.splice(0,4)
-	ghost_tet.setPos(tet.pos.x, tet.pos.y)
-	ghost_tet.hard_drop();
-	
-
-	return ghost_tet;
-}
-
-function create_next_tetromino() {
-	next_tet = create_tetromino();
-	next_tet.setposX(480)
-	next_tet.setposY(100);
-
-	return next_tet;
-}
-
-
-
-function create_tetromino(pieces) {
-	r = random(1,7);
-	r = Math.round(r);
-	var tet;
-
-	if(r == 7 ){
-		tet = new Tetromino(Pieces.Iblock(0), "lpiece", placed_blocks, false, Iblock_img);
-	}else if (r == 6){
-		tet = new Tetromino(Pieces.Lblock(0), "lpiece", placed_blocks, false, Lblock_img);
-	}else if (r == 5){
-		tet = new Tetromino(Pieces.Jblock(0), "lpiece", placed_blocks, false, Jblock_img);
-	}else if (r == 4){
-		tet = new Tetromino(Pieces.Oblock(0), "lpiece", placed_blocks, false, Oblock_img);
-	}else if (r == 3){
-		tet = new Tetromino(Pieces.Tblock(0), "lpiece", placed_blocks, false, Tblock_img);
-	}else if (r == 2){
-		tet = new Tetromino(Pieces.Sblock(0), "lpiece", placed_blocks, false, Sblock_img);
-	}else if (r == 1){
-		tet = new Tetromino(Pieces.Zblock(0), "lpiece", placed_blocks, false, Zblock_img);
-	}else{
-		tet = new Tetromino(Pieces.Zblock(0), "lpiece", placed_blocks, false, Zblock_img);
-	}
-
-	return tet;
-}
-
-function draw_grid() {
-	for(x=200; x<420; x+=20){
-		noStroke();
-		fill(150);
-		rect(x, 0, 1, height);
-	}
-	for(y=0; y<width; y+=20){
-		noStroke();
-		fill(150);
-		rect(200, y, 220, 1);
-	}
-
-
-}
-
-function draw_borders() {
+function drawBoundingBox() {
 	fill(0,0,255)
-
-	stroke(0)
-	strokeWeight(2)
-
-	// rect(200,0,20,height);
-	// rect(420,0,20,height);
-
-	image(border_img,200,0)
-	image(border_img,420,0)
-
-	image(death_bar_img,220,165)
-
-	rect(480,100,120,3)
-	rect(480,100,3,100)
-	rect(480,200,120,3)
-	rect(597,100,3,100)
+	strokeWeight(5)
+	rect(400,0,40,height)
+	rect(840,0,40,height)
 }
+
 
 function preload() {
-
 	block_img = loadImage('assets/block_img.png')
 	Iblock_img = loadImage('assets/Iblock_img.png')
 	Tblock_img = loadImage('assets/Tblock_img.png')
@@ -108,9 +18,19 @@ function preload() {
 	Zblock_img = loadImage('assets/Zblock_img.png')
 	ghost_img = loadImage('assets/ghost_img.png')
 
-	border_img = loadImage('assets/border.png')
-	death_bar_img = loadImage('assets/death_bar.png')
+	//list of block images
+	blockImgs = [Iblock_img, Tblock_img, Oblock_img, Lblock_img, Jblock_img, Sblock_img, Zblock_img]
 
+	//list of tetromino metadata
+	tetrominos = [];
+
+	tetrominos.push(Pieces.Iblock(0));
+	tetrominos.push(Pieces.Oblock(0));
+	tetrominos.push(Pieces.Tblock(0));
+	tetrominos.push(Pieces.Lblock(0));
+	tetrominos.push(Pieces.Jblock(0));
+	tetrominos.push(Pieces.Sblock(0));
+	tetrominos.push(Pieces.Zblock(0));
 }
 
 function getTimeString(milli) {
@@ -120,227 +40,330 @@ function getTimeString(milli) {
 
 	seconds = Math.floor(((total_seconds/60) - minutes) * 60)
 
-
 	return minutes + ":" + seconds +":00"
 }
 
+function updateGhost() {
+	for (var i = 0; i < fallingBlocks.length; i++) {
+		ghostBlocks[i].x = fallingBlocks[i].x;
+		ghostBlocks[i].y = fallingBlocks[i].y;
+	}
+}
+
+function newTetromino(){
+	tetromino = new Tetromino(width/2-120, -120, random(tetrominos), ghost_img, globalPlacedBlocks);
+	ghostTetromino = new Tetromino(tetromino.x, tetromino.y, tetromino.tetromino, ghost_img, globalPlacedBlocks);
+}
+
 function setup() {
-
 	//Creates Canvas, Including Resolution
-	createCanvas(640, 480);
+	createCanvas(1280, 800);
+	//Sets game FrameRate Cap
+	frameRate(600);
 
-	frameRate(60);
+	//list of all placed blocks in the game.
+	globalPlacedBlocks = [];
 
-	Pieces = new Pieces();
+	//list of falling blocks
+	fallingBlocks = [];
+	//if true, dump all falling blocks into globalPlacedBlocks
+	dumpFallingBlocks = false;
 
-	r = random(1,1000000000)
+	//list of ghost Blocks
+	ghostBlocks = [];
 
-	randomSeed(r);
+	// fallingBlocks.push(new Block(width/2, 0, random(blockImgs), ghost_img, globalPlacedBlocks));
 
-	tet = create_tetromino();
-	next_tet = create_next_tetromino();
+	newTetromino();
 
-	ghost_tet = create_ghost_tet(tet);
+
+	fallingBlockTimer = 0;
+	fallingBlockRate = 500;
+
+	movementTimer = 0;
+	movementRate = 20;
+
+	lines = 0;
+	score = 0;
+	level = 1;
+
 }
 
 
+function gameLogic() {
+
+	fallingBlocks = tetromino.blocks;
+	ghostBlocks = ghostTetromino.blocks;
+	updateGhost();
+
+
+	if (millis() - fallingBlockTimer >= fallingBlockRate){
+		for (var i = 0; i < fallingBlocks.length; i++) {
+			fallingBlocks[i].update();
+
+		}
+		tetromino.update('down');
+		fallingBlockTimer = millis();
+	}
+
+	if (keyIsDown(LEFT_ARROW)){
+
+		if(movementTimer > movementRate){
+			var blocked = false;
+
+			for (var i = 0; i < fallingBlocks.length; i++) {
+				if (fallingBlocks[i].isBlockedLeft()){
+					blocked = true;
+					break;
+				}
+			}
+			if(!blocked){
+				for (var i = 0; i < fallingBlocks.length; i++) {
+					fallingBlocks[i].shift('left');
+
+				}
+				tetromino.update('left');
+				updateGhost();
+			}
+			movementTimer = 0;
+		}
+		else{
+			movementTimer++;
+		}
+
+
+	}
+
+	if (keyIsDown(RIGHT_ARROW)){
+		if(movementTimer > movementRate){
+			var blocked = false;
+
+			for (var i = 0; i < fallingBlocks.length; i++) {
+				if (fallingBlocks[i].isBlockedRight()){
+					blocked = true;
+					break;
+				}
+			}
+			if(!blocked){
+				for (var i = 0; i < fallingBlocks.length; i++) {
+					fallingBlocks[i].shift('right');
+
+				}
+				tetromino.update('right');
+				updateGhost();
+			}
+			movementTimer = 0;
+		}
+		else{
+			movementTimer++;
+		}
+
+	}
+
+
+
+
+
+	if(keyIsDown(DOWN_ARROW)){
+		fallingBlockRate = 50;
+	}else{
+		fallingBlockRate = 1000;
+	}
+
+	var quit = false;
+	while(!quit){
+
+		for (var i = 0; i < ghostBlocks.length; i++) {
+			if (ghostBlocks[i].isBlockedDownward()){
+				quit = true;
+			}
+		}
+		if(!quit){
+			for (var i = 0; i < ghostBlocks.length; i++) {
+				ghostBlocks[i].y += 40;
+			}
+		}
+	}
+
+	for (var i = 0; i < fallingBlocks.length; i++) {
+		fallingBlocks[i].draw(fallingBlocks[i].img);
+
+		if (fallingBlocks[i].isBlockedDownward()){
+			dumpFallingBlocks = true;
+		}
+	}
+
+	if(dumpFallingBlocks){
+		for (var i = 0; i < fallingBlocks.length; i++) {
+			globalPlacedBlocks.push(fallingBlocks[i]);
+		}
+
+		newTetromino();
+
+		// fallingBlocks.push(new Block(width/2, 0, random(blockImgs), ghost_img,  globalPlacedBlocks));
+
+		dumpFallingBlocks = false;
+	}
+
+	var combo = 0;
+
+	for (x = 1; x <= 20; x++){
+		row = x*40;
+		count = 0;
+
+
+		for (i = 0; i < globalPlacedBlocks.length; i++) {
+			if (800 - globalPlacedBlocks[i].y == row){
+				count++
+			}
+		}
+		if (count >= 10){
+			lines++
+			combo++
+			for (var i = globalPlacedBlocks.length - 1; i >= 0; i--) {
+				if ( 800 - globalPlacedBlocks[i].y == row){
+					globalPlacedBlocks.splice(i, 1);
+				}
+			}
+
+			for (var i = globalPlacedBlocks.length - 1; i >= 0; i--) {
+				if (800-globalPlacedBlocks[i].y > row){
+					globalPlacedBlocks[i].forceUpdate();
+				}
+
+			}
+		}
+	}
+
+	score += combo * 200;
+
+}
 
 function draw() {
 	//DRAW FUNCTION REPEATS EVREY FRAME!!
 	//Resets frame
 	background(51);
-	// draw_grid();
 
-	if (mainMenu){
-		if(keyIsDown(RETURN)){
-			mainMenu = false
-			inGame = true
-		}
+	//Run Game Logic
+	gameLogic();
 
-		text("Version: 0.6 Alpha",0,20)
-		// stroke(0)
-		// strokeWeight(6)
-		textSize(76)
-		fill(0,150,0)
-		text("GeoFFris",152,height/2+2)
-		fill(0,255,0)
-		text("GeoFFris",150,height/2)
+	// tetromino.ghostDraw();
 
-		textSize(20)
-		fill(75,0,0)
-		text("Press Enter to Start",221,height/2+51)
-		fill(255,0,0)
-		text("Press Enter to Start",220,height/2+50)
-		
+	for (var i = 0; i < globalPlacedBlocks.length; i++) {
+		globalPlacedBlocks[i].draw(globalPlacedBlocks[i].img);
 	}
 
-	if (inGame){
-
-		if (keyIsDown(DOWN_ARROW)){
-			drop_speed = 2;
-		}else{
-			round(drop_speed = 1000 * (1/pow(level,level/6))) 
-		}
-
-
-		if (millis()-last_milli_sincedrop >= drop_speed && !tet.isPlaced){
-			tet.update();
-
-			ghost_tet = create_ghost_tet(tet)
-
-			last_milli_sincedrop= millis();
-
-		}
-
-		if (millis()-last_milli_sincemove >= 75){
-			if (keyIsDown(LEFT_ARROW)){
-
-				tet.shift('left');
-				drop_timer = 0;
-				if (!tet.check_blocked()){
-					tet.setPlaced(false);
-				}
-
-				ghost_tet = create_ghost_tet(tet)
-				last_milli_sincemove = millis()
-
-			}else if (keyIsDown(RIGHT_ARROW)){
-
-				tet.shift('right');
-				drop_timer = 0;
-
-				if (!tet.check_blocked()){
-					tet.setPlaced(false);
-				}
-
-				ghost_tet = create_ghost_tet(tet)
-				last_milli_sincemove = millis()
-			}
-			
-		}else{
-			horizontal_timer++
-		}
-
-		if (tet.isPlaced){
-
-			if (drop_timer >= 15){
-
-				for(i=0; i < tet.blocks.length; i++){
-					tet.blocks[i].setPlaced(true);
-
-					placed_blocks.push(tet.blocks[i]);
-				}
-
-				tet = new Tetromino(next_tet.tetromino, "", placed_blocks, false, next_tet.img)
-
-				next_tet = create_next_tetromino();
-
-				drop_timer = 0;
-			}else{
-				drop_timer++;
-			}
-		}
-
-		ghost_tet.draw();
-
-		next_tet.draw();
-		tet.draw()
-		draw_borders();
-		
-		textSize(20)
-
-		text("Version: 0.6 Alpha",0,20)
-		text("fps: "+ round(frameRate()),0,40)
-		text("mili: "+ round(millis()),0,60)
-		text("drop_speed: "+ drop_speed,0,80)
-
-
-		text("Score: " + score, 480, 250)
-		text("Lines: " + lines, 480, 275)
-		text("Level: " + level, 480, 300)
-		text("Next Level in: " + (lines_req-lines) + " lines", 480, 325)
-		text("Time: " + getTimeString(millis()) , 480, 350)
-
-		for (i = 0; i < placed_blocks.length; i++){
-			placed_blocks[i].draw();
-		}
-
-		combo = 0
-		for (x = 1; x <= 16; x++){
-			row = x*20;
-			count = 0;
-
-			// console.log(row)
-
-			for (i = 0; i < placed_blocks.length; i++) {
-				if (500 - placed_blocks[i].true_pos.y == row){
-					count++
-					
-				}
-			}
-			if (count >= 10){
-				lines++
-				combo++
-				for (var i = placed_blocks.length - 1; i >= 0; i--) {
-					if ( 500 - placed_blocks[i].true_pos.y == row){
-						placed_blocks.splice(i, 1);
-					}
-				}
-
-				for (var i = placed_blocks.length - 1; i >= 0; i--) {
-					if (500-placed_blocks[i].true_pos.y > row){
-						placed_blocks[i].force_update()
-					}
-					
-				}
-			}
-		}
-
-		if (combo == 1){
-			score += 200;
-		}else if (combo == 2){
-			score += 300
-		}else if (combo == 3){
-			score += 500
-		}else if (combo == 4){
-			score += 800
-		}
-
-		if (lines >= lines_req){
-			level += 1;
-			lines_req += lines_req + level*2
-		}
+	for (var i = 0; i < ghostBlocks.length; i++) {
+		ghostBlocks[i].draw(ghost_img);
 	}
 
-	
+	drawBoundingBox();
+
+	textSize(40)
+
+	text("Version: 0.1 Alpha",0,40)
+	text("fps: "+ round(frameRate()),0,80)
+	text("milli: "+ round(millis()),0,120)
+	text("movementTimer: "+ movementTimer,0,160)
+
+	// text("Time: " + getTimeString(millis()) , 480, 350)
 
 }
+
 function keyPressed() {
-	if (keyCode == UP_ARROW){
-		tet.rotate('cw')
-		ghost_tet = create_ghost_tet(tet);
+	if (keyCode == LEFT_ARROW){
+		var blocked = false;
+
+		for (var i = 0; i < fallingBlocks.length; i++) {
+			if (fallingBlocks[i].isBlockedLeft()){
+				blocked = true;
+				break;
+			}
+		}
+		if(!blocked){
+			for (var i = 0; i < fallingBlocks.length; i++) {
+				fallingBlocks[i].shift('left');
+
+			}
+			tetromino.update('left');
+			updateGhost();
+		}
+
 	}
 
-	if (keyCode == 81){
-		level-=1
-	}else if (keyCode == 87){
-		level+=1
+	if (keyCode == RIGHT_ARROW){
+		var blocked = false;
+
+		for (var i = 0; i < fallingBlocks.length; i++) {
+			if (fallingBlocks[i].isBlockedRight()){
+				blocked = true;
+				break;
+			}
+		}
+		if(!blocked){
+			for (var i = 0; i < fallingBlocks.length; i++) {
+				fallingBlocks[i].shift('right');
+
+			}
+			tetromino.update('right');
+			updateGhost();
+		}
 	}
 
-	if (keyCode == 88){
-		tet.rotate('cw')
-		ghost_tet = create_ghost_tet(tet);
-	}else if (keyCode == 90){
-		tet.rotate('ccw')
-		ghost_tet = create_ghost_tet(tet);
+	if(keyCode == UP_ARROW){
+		if(!tetromino.isBlockedRotateCW()){
+			tetromino.rotate('cw');
+		}
+		fallingBlocks = tetromino.blocks;
+		updateGhost();
 	}
 
+	//space
 	if (keyCode == 32){
-		drop_timer = 15;
-		tet.hard_drop();
+		var quit = false;
+		while(!quit){
+
+			for (var i = 0; i < fallingBlocks.length; i++) {
+				if (fallingBlocks[i].isBlockedDownward()){
+					quit = true;
+				}
+			}
+			if(!quit){
+				for (var i = 0; i < fallingBlocks.length; i++) {
+					fallingBlocks[i].y += 40;
+				}
+			}
+		}
 	}
 
-	if (keyCode == DOWN_ARROW){
-		drop_speed = 5;
+	//'r' key
+	if(keyCode == 82){
+		globalPlacedBlocks = [];
+		fallingBlocks = [];
+
+		newTetromino();
 	}
+
+	//'z' key
+
+	if(keyCode == 90){
+		if(!tetromino.isBlockedRotateCW()){
+			tetromino.rotate('ccw');
+		}
+		fallingBlocks = tetromino.blocks;
+		updateGhost();
+	}
+
+	//'x'key
+	if(keyCode == 88){
+		if(!tetromino.isBlockedRotateCW()){
+			tetromino.rotate('cw');
+		}
+		fallingBlocks = tetromino.blocks;
+		updateGhost();
+	}
+}
+
+function keyTyped() {
+
 }
