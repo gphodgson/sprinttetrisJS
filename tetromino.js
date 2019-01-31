@@ -16,6 +16,7 @@ function Tetromino(x, y, tetromino, ghostImg, globalPlacedBlocks) {
 
     this.rotation = 0;
 
+    //this function will reset the the tertromino, aka build it based upon the current  x, and y values.
     this.generateBlocks = function() {
         var blocks = [];
         for(y=0; y<4; y++){
@@ -117,5 +118,17 @@ function Tetromino(x, y, tetromino, ghostImg, globalPlacedBlocks) {
 
         this.rotate('cw')
         return blocked;
+    }
+
+    this.setPos = function(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    //only use this if the blocks wont move
+    this.draw = function() {
+        for (var i = 0; i < this.blocks.length; i++) {
+            image(this.tetromino[4], this.x, this.y)
+        }
     }
 }

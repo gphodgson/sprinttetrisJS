@@ -17,6 +17,7 @@ function preload() {
 	Sblock_img = loadImage('assets/Sblock_img.png')
 	Zblock_img = loadImage('assets/Zblock_img.png')
 	ghost_img = loadImage('assets/ghost_img.png')
+	explosion_img = loadImage('assets/explosion.png')
 
 	//list of block images
 	blockImgs = [Iblock_img, Tblock_img, Oblock_img, Lblock_img, Jblock_img, Sblock_img, Zblock_img]
@@ -51,8 +52,26 @@ function updateGhost() {
 }
 
 function newTetromino(){
-	tetromino = new Tetromino(width/2-120, -120, random(tetrominos), ghost_img, globalPlacedBlocks);
+	// nextTetromino.setPos(width/2-120, -120);
+	tetromino = new Tetromino(width/2-120, -120, nextTetromino.tetromino, ghost_img, globalPlacedBlocks);
+	nextTetromino = new Tetromino(1000, 400, random(tetrominos), ghost_img, globalPlacedBlocks);
+	// nextTetromino.setPos(1000,400);
 	ghostTetromino = new Tetromino(tetromino.x, tetromino.y, tetromino.tetromino, ghost_img, globalPlacedBlocks);
+}
+
+function holdTetromino() {
+
+	var turninto = heldTetromino.tetromino;
+
+
+	heldTetromino = new Tetromino(80, 400, tetromino.tetromino, ghost_img, globalPlacedBlocks);
+
+	tetromino = new Tetromino(width/2-120, -120, turninto, ghost_img, globalPlacedBlocks);
+	ghostTetromino = new Tetromino(tetromino.x, tetromino.y, tetromino.tetromino, ghost_img, globalPlacedBlocks);
+
+	held = true;
+
+
 }
 
 function setup() {
@@ -72,16 +91,25 @@ function setup() {
 	//list of ghost Blocks
 	ghostBlocks = [];
 
+	//list of decals
+	decals = [];
+
 	// fallingBlocks.push(new Block(width/2, 0, random(blockImgs), ghost_img, globalPlacedBlocks));
 
-	newTetromino();
+	// newTetromino();
 
+	tetromino = new Tetromino(width/2-120, -120, random(tetrominos), ghost_img, globalPlacedBlocks);
+	ghostTetromino = new Tetromino(tetromino.x, tetromino.y, tetromino.tetromino, ghost_img, globalPlacedBlocks);
+	nextTetromino = new Tetromino(1000,400, random(tetrominos), ghost_img, globalPlacedBlocks);
+	heldTetromino = new Tetromino(80,400, random(tetrominos), ghost_img, globalPlacedBlocks);
+
+	held = false;
 
 	fallingBlockTimer = 0;
 	fallingBlockRate = 500;
 
 	movementTimer = 0;
-	movementRate = 20;
+	movementRate = 5;
 
 	lines = 0;
 	score = 0;
@@ -161,9 +189,6 @@ function gameLogic() {
 	}
 
 
-
-
-
 	if(keyIsDown(DOWN_ARROW)){
 		fallingBlockRate = 50;
 	}else{
@@ -172,6 +197,8 @@ function gameLogic() {
 
 	var quit = false;
 	while(!quit){
+
+		// console.log('debug')
 
 		for (var i = 0; i < ghostBlocks.length; i++) {
 			if (ghostBlocks[i].isBlockedDownward()){
@@ -222,6 +249,7 @@ function gameLogic() {
 			combo++
 			for (var i = globalPlacedBlocks.length - 1; i >= 0; i--) {
 				if ( 800 - globalPlacedBlocks[i].y == row){
+					decals.push(new Decal(globalPlacedBlocks[i].x - 20, globalPlacedBlocks[i].y - 20, explosion_img, 100))
 					globalPlacedBlocks.splice(i, 1);
 				}
 			}
@@ -249,6 +277,8 @@ function draw() {
 
 	// tetromino.ghostDraw();
 
+
+
 	for (var i = 0; i < globalPlacedBlocks.length; i++) {
 		globalPlacedBlocks[i].draw(globalPlacedBlocks[i].img);
 	}
@@ -257,14 +287,46 @@ function draw() {
 		ghostBlocks[i].draw(ghost_img);
 	}
 
+	// nextTetromino.draw();
+	for (var i = 0; i < nextTetromino.blocks.length; i++) {
+		nextTetromino.blocks[i].draw(nextTetromino.tetromino[4]);
+	}
+
+	if(held){
+		for (var i = 0; i < heldTetromino.blocks.length; i++) {
+			heldTetromino.blocks[i].draw(heldTetromino.tetromino[4]);
+		}
+	}
+
+	// console.log(nextTetromino.x + " " +nextTetromino.y)
+
+	if(decals != []){
+		for (var i = decals.length-1; i >= 0; i--) {
+			console.log(i)
+			decals[i].draw();
+
+			if (decals[i].delete){
+
+				decals.splice(i, 1)
+			}
+		}
+	}
+
 	drawBoundingBox();
 
 	textSize(40)
 
-	text("Version: 0.1 Alpha",0,40)
+	text("Version: 0.2 Alpha",0,40)
 	text("fps: "+ round(frameRate()),0,80)
 	text("milli: "+ round(millis()),0,120)
 	text("movementTimer: "+ movementTimer,0,160)
+
+	text("Lines: " + lines, 1000, 80)
+	text("Score: " + score, 1000, 120)
+
+
+	text("Held:", 80, 360);
+	text("Next:", 1000, 360);
 
 	// text("Time: " + getTimeString(millis()) , 480, 350)
 
@@ -342,6 +404,10 @@ function keyPressed() {
 		fallingBlocks = [];
 
 		newTetromino();
+	}
+
+	if(keyCode == 67){
+		holdTetromino()
 	}
 
 	//'z' key
